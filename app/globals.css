@@ -128,17 +128,24 @@
 
   .print-container { 
     box-shadow: none !important; 
-    margin: 0 auto !important; 
-    width: 297mm !important;
-    min-height: 210mm !important;
+    margin: 0 auto 5mm auto !important; 
+    width: 280mm !important; /* Slightly narrower to ensure it fits within margins */
     max-width: none !important; 
-    border: none !important;
-    padding: 10mm 10mm 25mm 10mm !important;
-    page-break-after: always !important;
-    break-after: page !important;
+    border: 1px solid black !important;
+    padding: 5mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     position: relative !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: visible !important;
+    background: white !important;
+    min-height: 0 !important;
+  }
+
+  /* Ensure the first container of the document starts on a new page if needed, 
+     but subsequent ones can follow if they fit */
+  .print-container:first-of-type {
+    margin-top: 0 !important;
   }
 }

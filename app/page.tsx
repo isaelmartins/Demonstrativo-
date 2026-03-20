@@ -171,7 +171,7 @@ export default function Home() {
       // Fallback if no det tags found (maybe a different XML format)
       const xProd = xmlDoc.getElementsByTagName("xProd")[0]?.textContent || "Item Diversos";
       const qComRaw = xmlDoc.getElementsByTagName("qCom")[0]?.textContent || "1";
-      const qCom = Math.round(parseFloat(qComRaw)).toString();
+      const qCom = parseFloat(qComRaw).toString();
       const uCom = xmlDoc.getElementsByTagName("uCom")[0]?.textContent || "un";
       const vNF = parseFloat(xmlDoc.getElementsByTagName("vNF")[0]?.textContent || "0");
 
@@ -195,7 +195,7 @@ export default function Home() {
     const newPayments = detTags.map((det) => {
       const xProd = det.getElementsByTagName("xProd")[0]?.textContent || "Item Diversos";
       const qComRaw = det.getElementsByTagName("qCom")[0]?.textContent || "1";
-      const qCom = Math.round(parseFloat(qComRaw)).toString();
+      const qCom = parseFloat(qComRaw).toString();
       const uCom = det.getElementsByTagName("uCom")[0]?.textContent || "un";
       const vProd = parseFloat(det.getElementsByTagName("vProd")[0]?.textContent || "0");
 
@@ -511,14 +511,14 @@ export default function Home() {
 
                 const totalPages = allPages.length;
 
-                return allPages.map((page, pageIdx) => {
-                  const currentPage = pageIdx + 1;
-                  const isFirstPageOfDoc = currentPage === 1;
-                  const isLastPageOfDoc = currentPage === totalPages;
-                  const { fund, items, firstPay, isLastOfFund, fundTotal, pageTotal, itemOffset, isVisibleOnScreen } = page;
+                  return allPages.map((page, pageIdx) => {
+                    const currentPage = pageIdx + 1;
+                    const isFirstPageOfReport = currentPage === 1;
+                    const isLastPageOfReport = currentPage === totalPages;
+                    const { fund, items, firstPay, isLastOfFund, fundTotal, pageTotal, itemOffset, isVisibleOnScreen, isLastOfInvoice, invoiceTotal } = page;
 
-                  return (
-                    <div key={`${fund}-${page.docNum}-${pageIdx}`} className={`${isVisibleOnScreen ? 'flex' : 'hidden print:flex'} print-container bg-white text-black shadow-xl pt-4 px-8 pb-16 w-[1122px] min-h-[794px] flex flex-col border border-black font-serif relative print:shadow-none print:border-none print:m-0 print:w-full print:min-h-0`}>
+                    return (
+                      <div key={`${fund}-${page.docNum}-${pageIdx}`} className={`${isVisibleOnScreen ? 'flex' : 'hidden print:flex'} print-container bg-white text-black shadow-lg p-6 w-[1122px] flex flex-col border border-black font-serif relative print:min-h-0`}>
                             {/* Watermark for preview */}
                             <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none no-print">
                               <div className="text-[120px] font-black rotate-[-35deg] border-8 border-black p-10">PAISAGEM</div>
@@ -550,7 +550,7 @@ export default function Home() {
                             </div>
 
                             {/* Bloco I and II - Only on the very first page of the document */}
-                            {isFirstPageOfDoc && (
+                            {isFirstPageOfReport && (
                               <>
                                 {/* Bloco I */}
                                 <div 
@@ -728,7 +728,7 @@ export default function Home() {
                                           <td className="border-r border-b border-black p-0.5 text-center font-bold text-[10px]">
                                             {(() => {
                                               const val = payment.qty.split(' ')[0];
-                                              const num = parseFloat(val.replace(',', '.'));
+                                              const num = parseFloat(val);
                                               return isNaN(num) ? val : num.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
                                             })()}
                                           </td>
@@ -746,14 +746,15 @@ export default function Home() {
                                     })}
                                   </tbody>
                                   <tfoot>
-                                    {/* Only show partial total if the document fits in a single page */}
-                                    {totalPages === 1 && (
+                                    {/* Show invoice total if it's the last page of the invoice and not the last of fund/report to avoid duplication */}
+                                    {isLastOfInvoice && !isLastOfFund && !isLastPageOfReport && (
                                       <tr className="font-bold uppercase text-[9px]">
                                         <td className="border-r border-b border-black p-0.5"></td>
-                                        <td colSpan={10} className="border-r border-b border-black p-0.5 text-left">TOTAL PARCIAL</td>
-                                        <td className="border-b border-black p-0.5 text-center">{formatNumber(pageTotal)}</td>
+                                        <td colSpan={10} className="border-r border-b border-black p-0.5 text-left">TOTAL DA NOTA</td>
+                                        <td className="border-b border-black p-0.5 text-center">{formatNumber(invoiceTotal)}</td>
                                       </tr>
                                     )}
+                                    
                                     {isLastOfFund && (
                                       <tr className="font-bold uppercase text-[10px] bg-gray-50">
                                         <td className="border-r border-b border-black p-0.5"></td>
@@ -761,7 +762,7 @@ export default function Home() {
                                         <td className="border-b border-black p-0.5 text-center text-[11px]">{formatNumber(fundTotal)}</td>
                                       </tr>
                                     )}
-                                    {isLastPageOfDoc && (
+                                    {isLastPageOfReport && (
                                       <tr className="font-bold uppercase text-[11px] bg-gray-100">
                                         <td className="border-r border-b border-black p-0.5"></td>
                                         <td colSpan={10} className="border-r border-b border-black p-0.5 text-left">TOTAL GERAL</td>
@@ -773,7 +774,7 @@ export default function Home() {
                               </div>
 
                               {/* Signature Section - Only on the very last page of the document */}
-                              {isLastPageOfDoc && (
+                              {isLastPageOfReport && (
                                 <div className="mt-4">
                                   <p className="text-[8px] font-bold mb-2">OBS. ACOMPANHA ESTA PRESTAÇÃO DE CONTAS, OFÍCIO DE ENCAMINHAMENTO DA PRESTAÇÃO DE CONTAS, EXTRATO BANCÁRIO, PARECER DO CONSELHO E COMPROVANTES DE DESPESAS.</p>
                                   <div className="grid grid-cols-2 border border-black">
