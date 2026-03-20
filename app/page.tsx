@@ -464,7 +464,6 @@ export default function Home() {
                 const estadualPayments = payments.filter(p => p.fund === 'Estadual');
                 const totalGeral = payments.reduce((acc, p) => acc + p.total, 0);
 
-                const ITEMS_PER_PAGE = 12;
                 const allPages: any[] = [];
 
                 ['Federal', 'Estadual'].forEach((fund, fundIdx) => {
@@ -479,10 +478,15 @@ export default function Home() {
 
                   const invoiceEntries = Object.entries(invoices);
                   invoiceEntries.forEach(([docNum, invoicePayments], invoiceIdx) => {
-                    const isLastInvoiceOfFund = invoiceIdx === invoiceEntries.length - 1;
+                    let i = 0;
+                    let pageInInvoice = 0;
                     
-                    for (let i = 0; i < invoicePayments.length; i += ITEMS_PER_PAGE) {
-                      const chunk = invoicePayments.slice(i, i + ITEMS_PER_PAGE);
+                    while (i < invoicePayments.length) {
+                      const isFirstPageOfDoc = allPages.length === 0;
+                      // First page of doc has Bloco I and II, so it fits fewer items
+                      const itemsPerPage = isFirstPageOfDoc ? 10 : 22;
+                      
+                      const chunk = invoicePayments.slice(i, i + itemsPerPage);
                       allPages.push({
                         fund,
                         fundIdx,
@@ -490,14 +494,17 @@ export default function Home() {
                         items: chunk,
                         firstPay: invoicePayments[0],
                         isFirstOfInvoice: i === 0,
-                        isLastOfInvoice: i + ITEMS_PER_PAGE >= invoicePayments.length,
-                        isLastOfFund: isLastInvoiceOfFund && (i + ITEMS_PER_PAGE >= invoicePayments.length),
+                        isLastOfInvoice: i + itemsPerPage >= invoicePayments.length,
+                        isLastOfFund: (invoiceIdx === invoiceEntries.length - 1) && (i + itemsPerPage >= invoicePayments.length),
                         fundTotal: fundPayments.reduce((acc, p) => acc + p.total, 0),
                         invoiceTotal: invoicePayments.reduce((acc, p) => acc + p.total, 0),
                         pageTotal: chunk.reduce((acc, p) => acc + p.total, 0),
                         itemOffset: i,
                         isVisibleOnScreen: filterFund === 'All' || filterFund === fund
                       });
+                      
+                      i += itemsPerPage;
+                      pageInInvoice++;
                     }
                   });
                 });
@@ -511,7 +518,7 @@ export default function Home() {
                   const { fund, items, firstPay, isLastOfFund, fundTotal, pageTotal, itemOffset, isVisibleOnScreen } = page;
 
                   return (
-                    <div key={`${fund}-${page.docNum}-${pageIdx}`} className={`${isVisibleOnScreen ? 'flex' : 'hidden print:flex'} print-container bg-white text-black shadow-xl pt-8 px-8 pb-24 w-[1122px] min-h-[794px] flex flex-col border border-black font-serif relative print:shadow-none print:border-none print:m-0 print:w-full print:min-h-0`}>
+                    <div key={`${fund}-${page.docNum}-${pageIdx}`} className={`${isVisibleOnScreen ? 'flex' : 'hidden print:flex'} print-container bg-white text-black shadow-xl pt-4 px-8 pb-16 w-[1122px] min-h-[794px] flex flex-col border border-black font-serif relative print:shadow-none print:border-none print:m-0 print:w-full print:min-h-0`}>
                             {/* Watermark for preview */}
                             <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none no-print">
                               <div className="text-[120px] font-black rotate-[-35deg] border-8 border-black p-10">PAISAGEM</div>
@@ -553,34 +560,34 @@ export default function Home() {
                                 >
                                   <p className="text-[10px] font-bold mb-0.5">Bloco I – Identificação da Unidade Executora e da(s) Escola (s) beneficiada(s)</p>
                                   <div className="grid grid-cols-12 border-t border-l border-black">
-                                    <div className="col-span-6 border-r border-b border-black p-1">
-                                      <label className="block text-[7px] font-bold">01-Nome da Unidade Executora (Conselho Escolar,Etc)</label>
-                                      <p className="text-[9px] font-bold uppercase">{schoolInfo.name}</p>
+                                    <div className="col-span-6 border-r border-b border-black p-0.5">
+                                      <label className="block text-[6px] font-bold">01-Nome da Unidade Executora (Conselho Escolar,Etc)</label>
+                                      <p className="text-[8px] font-bold uppercase">{schoolInfo.name}</p>
                                     </div>
-                                    <div className="col-span-4 border-r border-b border-black p-1">
-                                      <label className="block text-[7px] font-bold">02- Nº CNPJ</label>
-                                      <p className="text-[9px] font-bold">{schoolInfo.cnpj}</p>
+                                    <div className="col-span-4 border-r border-b border-black p-0.5">
+                                      <label className="block text-[6px] font-bold">02- Nº CNPJ</label>
+                                      <p className="text-[8px] font-bold">{schoolInfo.cnpj}</p>
                                     </div>
-                                    <div className="col-span-2 border-r border-b border-black p-1">
-                                      <label className="block text-[7px] font-bold">03-Exercício</label>
-                                      <p className="text-[9px] font-bold text-center">{schoolInfo.year}</p>
+                                    <div className="col-span-2 border-r border-b border-black p-0.5">
+                                      <label className="block text-[6px] font-bold">03-Exercício</label>
+                                      <p className="text-[8px] font-bold text-center">{schoolInfo.year}</p>
                                     </div>
                                     
-                                    <div className="col-span-6 border-r border-b border-black p-1">
-                                      <label className="block text-[7px] font-bold">04 – NOME DA(S) ESCOLA(S) BENEFICIADO</label>
-                                      <p className="text-[9px] font-bold uppercase">{schoolInfo.beneficiarySchools}</p>
+                                    <div className="col-span-6 border-r border-b border-black p-0.5">
+                                      <label className="block text-[6px] font-bold">04 – NOME DA(S) ESCOLA(S) BENEFICIADO</label>
+                                      <p className="text-[8px] font-bold uppercase">{schoolInfo.beneficiarySchools}</p>
                                     </div>
-                                    <div className="col-span-1 border-r border-b border-black p-1">
-                                      <label className="block text-[7px] font-bold">05 – DEP. ADM. ESTADUAL</label>
-                                      <p className="text-[8px] font-bold uppercase">{reportConfig.depAdm}</p>
+                                    <div className="col-span-1 border-r border-b border-black p-0.5">
+                                      <label className="block text-[6px] font-bold">05 – DEP. ADM. ESTADUAL</label>
+                                      <p className="text-[7px] font-bold uppercase">{reportConfig.depAdm}</p>
                                     </div>
-                                    <div className="col-span-3 border-r border-b border-black p-1">
-                                      <label className="block text-[7px] font-bold">06 – ENDEREÇO</label>
-                                      <p className="text-[8px] font-bold uppercase">{schoolInfo.address}</p>
+                                    <div className="col-span-3 border-r border-b border-black p-0.5">
+                                      <label className="block text-[6px] font-bold">06 – ENDEREÇO</label>
+                                      <p className="text-[7px] font-bold uppercase">{schoolInfo.address}</p>
                                     </div>
-                                    <div className="col-span-2 border-r border-b border-black p-1">
-                                      <label className="block text-[7px] font-bold">07 – MUNICÍPIO</label>
-                                      <p className="text-[8px] font-bold uppercase">{schoolInfo.city}</p>
+                                    <div className="col-span-2 border-r border-b border-black p-0.5">
+                                      <label className="block text-[6px] font-bold">07 – MUNICÍPIO</label>
+                                      <p className="text-[7px] font-bold uppercase">{schoolInfo.city}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -593,37 +600,37 @@ export default function Home() {
                                 >
                                   <p className="text-[10px] font-bold mb-0.5">Bloco II – Síntese da receita e da despesa</p>
                                   <div className="grid grid-cols-8 border-t border-l border-black text-center">
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight">08 – REC. VAL. RECEBIDO</label>
-                                      <p className="text-[8px] font-bold">R$ {reportConfig.receivedValue || formatNumber(totalGeral)}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight">08 – REC. VAL. RECEBIDO</label>
+                                      <p className="text-[7px] font-bold">R$ {reportConfig.receivedValue || formatNumber(totalGeral)}</p>
                                     </div>
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight">09 – REND. APLICAÇAO</label>
-                                      <p className="text-[8px] font-bold">R$ {reportConfig.investmentYield}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight">09 – REND. APLICAÇAO</label>
+                                      <p className="text-[7px] font-bold">R$ {reportConfig.investmentYield}</p>
                                     </div>
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight">10 – SALDO ANTERIOR</label>
-                                      <p className="text-[8px] font-bold">R$ {reportConfig.previousBalance}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight">10 – SALDO ANTERIOR</label>
+                                      <p className="text-[7px] font-bold">R$ {reportConfig.previousBalance}</p>
                                     </div>
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight">11 – VALOR TOTAL</label>
-                                      <p className="text-[8px] font-bold">R$ {reportConfig.totalValue || formatNumber(totalGeral)}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight">11 – VALOR TOTAL</label>
+                                      <p className="text-[7px] font-bold">R$ {reportConfig.totalValue || formatNumber(totalGeral)}</p>
                                     </div>
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight">12 – DESP. REALIZADAS</label>
-                                      <p className="text-[8px] font-bold">R$ {reportConfig.expensesRealized || formatNumber(totalGeral)}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight">12 – DESP. REALIZADAS</label>
+                                      <p className="text-[7px] font-bold">R$ {reportConfig.expensesRealized || formatNumber(totalGeral)}</p>
                                     </div>
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight">13 – SALDO</label>
-                                      <p className="text-[8px] font-bold">R$ {reportConfig.balance}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight">13 – SALDO</label>
+                                      <p className="text-[7px] font-bold">R$ {reportConfig.balance}</p>
                                     </div>
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight uppercase">14–PERÍODO DE EXECUSSÃO</label>
-                                      <p className="text-[7px] font-bold">{reportConfig.period}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight uppercase">14–PERÍODO DE EXECUSSÃO</label>
+                                      <p className="text-[6px] font-bold">{reportConfig.period}</p>
                                     </div>
-                                    <div className="border-r border-b border-black p-1">
-                                      <label className="block text-[6px] font-bold leading-tight uppercase">15-PARCELA Nº</label>
-                                      <p className="text-[7px] font-bold uppercase">{reportConfig.installment}</p>
+                                    <div className="border-r border-b border-black p-0.5">
+                                      <label className="block text-[5px] font-bold leading-tight uppercase">15-PARCELA Nº</label>
+                                      <p className="text-[6px] font-bold uppercase">{reportConfig.installment}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -636,65 +643,67 @@ export default function Home() {
                               <div className="border-t border-l border-black">
                                 <table className="w-full border-collapse text-[7px]">
                                   <thead>
-                                    <tr className="text-center font-bold uppercase text-[8px]">
-                                      <th rowSpan={2} className="border-r border-b border-black w-8 p-1">16 –<br/>ITEM</th>
-                                      <th rowSpan={2} className="border-r border-b border-black p-1 w-1/4 text-left align-top">
-                                        <div className="text-[8px] font-bold">17 - NOME DO FAVORECIDO E CPF/CNPJ</div>
-                                        <div className="text-[9px] mt-1 font-bold">
+                                    <tr className="text-center font-bold uppercase text-[7px]">
+                                      <th rowSpan={2} className="border-r border-b border-black w-8 p-0.5">16 –<br/>ITEM</th>
+                                      <th rowSpan={2} className="border-r border-b border-black p-0.5 w-1/4 text-left align-top">
+                                        <div className="text-[7px] font-bold">17 - NOME DO FAVORECIDO E CPF/CNPJ</div>
+                                        <div className="text-[8px] mt-0.5 font-bold">
                                           {firstPay?.name}<br/>
                                           CNPJ: {firstPay?.cnpj}
                                         </div>
                                       </th>
-                                      <th rowSpan={2} className="border-r border-b border-black p-1 w-1/4 text-left align-top text-[8px] font-bold">18 - NOME DO GÊNERO ALIMENTÍCIO</th>
-                                      <th colSpan={3} className="border-r border-b border-black p-1 text-[9px] font-bold">19 - DOCUMENTO</th>
-                                      <th colSpan={2} className="border-r border-b border-black p-1 text-[9px] font-bold">20 - PAGAMENTO</th>
-                                      <th rowSpan={2} className="border-r border-b border-black p-1 w-24 text-[8px] font-bold">
+                                      <th rowSpan={2} className="border-r border-b border-black p-0.5 w-1/4 text-left align-top text-[7px] font-bold">18 - NOME DO GÊNERO ALIMENTÍCIO</th>
+                                      <th colSpan={3} className="border-r border-b border-black p-0.5 text-[8px] font-bold">19 - DOCUMENTO</th>
+                                      <th colSpan={2} className="border-r border-b border-black p-0.5 text-[8px] font-bold">20 - PAGAMENTO</th>
+                                      <th colSpan={2} className="border-r border-b border-black p-0.5 text-[7px] font-bold">
                                         <div>21 – QUANTIDADE</div>
-                                        <div className="text-[6px] font-normal mt-0.5">KG. LT , UN. Etc.</div>
+                                        <div className="text-[5px] font-normal mt-0.5">KG. LT , UN. Etc.</div>
                                       </th>
-                                      <th colSpan={2} className="border-r border-b border-black p-1 text-[9px] font-bold">22 – VALOR (R$) 1,00</th>
+                                      <th colSpan={2} className="border-r border-b border-black p-0.5 text-[8px] font-bold">22 – VALOR (R$) 1,00</th>
                                     </tr>
-                                    <tr className="text-center font-bold uppercase text-[7px]">
-                                      <th className="border-r border-b border-black p-1 w-12">
+                                    <tr className="text-center font-bold uppercase text-[6px]">
+                                      <th className="border-r border-b border-black p-0.5 w-12">
                                         <div className="flex flex-col items-center justify-center leading-tight">
-                                          <span className="text-[6px]">TIPO</span>
-                                          <span className="text-[10px]">{firstPay?.doc.includes(' ') ? firstPay?.doc.split(' ')[0] : 'NFE'}</span>
+                                          <span className="text-[5px]">TIPO</span>
+                                          <span className="text-[8px]">{firstPay?.doc.includes(' ') ? firstPay?.doc.split(' ')[0] : 'NFE'}</span>
                                         </div>
                                       </th>
-                                      <th className="border-r border-b border-black p-1 w-16">
+                                      <th className="border-r border-b border-black p-0.5 w-16">
                                         <div className="flex flex-col items-center justify-center leading-tight">
-                                          <span className="text-[6px]">NÚMERO</span>
-                                          <span className="text-[10px]">{firstPay?.doc.includes('NF-e') ? firstPay?.doc.split(' ')[1] : firstPay?.doc}</span>
+                                          <span className="text-[5px]">NÚMERO</span>
+                                          <span className="text-[8px]">{firstPay?.doc.includes('NF-e') ? firstPay?.doc.split(' ')[1] : firstPay?.doc}</span>
                                         </div>
                                       </th>
-                                      <th className="border-r border-b border-black p-1 w-20">
+                                      <th className="border-r border-b border-black p-0.5 w-20">
                                         <div className="flex flex-col items-center justify-center leading-tight">
-                                          <span className="text-[6px]">DATA</span>
-                                          <span className="text-[10px]">{firstPay?.docDate}</span>
+                                          <span className="text-[5px]">DATA</span>
+                                          <span className="text-[8px]">{firstPay?.docDate}</span>
                                         </div>
                                       </th>
                                       <th 
-                                        className="border-r border-b border-black p-1 w-16 cursor-pointer no-print-hover transition-colors rounded-sm"
+                                        className="border-r border-b border-black p-0.5 w-16 cursor-pointer no-print-hover transition-colors rounded-sm"
                                         onClick={() => setEditingInvoicePayment({ doc: firstPay?.doc || '', payDoc: firstPay?.payDoc || '', payDate: firstPay?.payDate || '' })}
                                         title="Clique para editar pagamento"
                                       >
                                         <div className="flex flex-col items-center justify-center leading-tight">
-                                          <span className="text-[6px]">Nº CH./OB</span>
-                                          <span className="text-[10px]">{firstPay?.payDoc.includes('000000') ? '' : (firstPay?.payDoc.includes(' ') ? firstPay?.payDoc.split(' ')[1] : firstPay?.payDoc)}</span>
+                                          <span className="text-[5px]">Nº CH./OB</span>
+                                          <span className="text-[8px]">{firstPay?.payDoc.includes('000000') ? '' : (firstPay?.payDoc.includes(' ') ? firstPay?.payDoc.split(' ')[1] : firstPay?.payDoc)}</span>
                                         </div>
                                       </th>
                                       <th 
-                                        className="border-r border-b border-black p-1 w-20 cursor-pointer no-print-hover transition-colors rounded-sm"
+                                        className="border-r border-b border-black p-0.5 w-20 cursor-pointer no-print-hover transition-colors rounded-sm"
                                         onClick={() => setEditingInvoicePayment({ doc: firstPay?.doc || '', payDoc: firstPay?.payDoc || '', payDate: firstPay?.payDate || '' })}
                                         title="Clique para editar data de pagamento"
                                       >
                                         <div className="flex flex-col items-center justify-center leading-tight">
-                                          <span className="text-[6px]">DATA</span>
-                                          <span className="text-[10px]">{firstPay?.payDate}</span>
+                                          <span className="text-[5px]">DATA</span>
+                                          <span className="text-[8px]">{firstPay?.payDate}</span>
                                         </div>
                                       </th>
-                                      <th className="border-r border-b border-black p-1 w-20">VL. UNITÁRIO</th>
-                                      <th className="border-b border-black p-1 w-24">VALOR TOTAL</th>
+                                      <th className="border-r border-b border-black p-0.5 w-12 text-[6px]">QUANT.</th>
+                                      <th className="border-r border-b border-black p-0.5 w-12 text-[6px]">UNID.</th>
+                                      <th className="border-r border-b border-black p-0.5 w-20">VL. UNITÁRIO</th>
+                                      <th className="border-b border-black p-0.5 w-24">VALOR TOTAL</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -702,30 +711,34 @@ export default function Home() {
                                       return (
                                         <tr 
                                           key={payment.id} 
-                                          className="text-center cursor-pointer no-print-hover transition-colors"
+                                          className="text-center cursor-pointer no-print-hover transition-colors h-6"
                                           onClick={() => setSelectedPayment(payment)}
                                           title="Clique para ver ou editar detalhes"
                                         >
-                                          <td className="border-r border-b border-black p-1 text-[11px] font-bold">{itemOffset + pIdx + 1}</td>
-                                          <td className="border-r border-b border-black p-1"></td>
-                                          <td className="border-r border-b border-black p-1 text-left uppercase text-[11px] font-bold">
+                                          <td className="border-r border-b border-black p-0.5 text-[10px] font-bold">{itemOffset + pIdx + 1}</td>
+                                          <td className="border-r border-b border-black p-0.5"></td>
+                                          <td className="border-r border-b border-black p-0.5 text-left uppercase text-[10px] font-bold">
                                             {payment.item}
                                           </td>
-                                          <td className="border-r border-b border-black p-1"></td>
-                                          <td className="border-r border-b border-black p-1"></td>
-                                          <td className="border-r border-b border-black p-1"></td>
-                                          <td className="border-r border-b border-black p-1"></td>
-                                          <td className="border-r border-b border-black p-1"></td>
-                                          <td className="border-r border-b border-black p-1 text-center font-bold text-[11px]">
-                                            <div className="flex justify-center gap-4">
-                                              <span>{Math.round(parseFloat(payment.qty.split(' ')[0]))}</span>
-                                              <span className="uppercase">{payment.qty.split(' ')[1]}</span>
-                                            </div>
+                                          <td className="border-r border-b border-black p-0.5"></td>
+                                          <td className="border-r border-b border-black p-0.5"></td>
+                                          <td className="border-r border-b border-black p-0.5"></td>
+                                          <td className="border-r border-b border-black p-0.5"></td>
+                                          <td className="border-r border-b border-black p-0.5"></td>
+                                          <td className="border-r border-b border-black p-0.5 text-center font-bold text-[10px]">
+                                            {(() => {
+                                              const val = payment.qty.split(' ')[0];
+                                              const num = parseFloat(val.replace(',', '.'));
+                                              return isNaN(num) ? val : num.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+                                            })()}
                                           </td>
-                                          <td className="border-r border-b border-black p-1 text-center font-bold text-[11px]">
+                                          <td className="border-r border-b border-black p-0.5 text-center font-bold text-[10px] uppercase">
+                                            {payment.qty.split(' ')[1] || ''}
+                                          </td>
+                                          <td className="border-r border-b border-black p-0.5 text-center font-bold text-[10px]">
                                             {formatNumber(payment.total / (parseFloat(payment.qty) || 1))}
                                           </td>
-                                          <td className="border-b border-black p-1 text-center font-bold text-[11px]">
+                                          <td className="border-b border-black p-0.5 text-center font-bold text-[10px]">
                                             {formatNumber(payment.total)}
                                           </td>
                                         </tr>
@@ -733,23 +746,26 @@ export default function Home() {
                                     })}
                                   </tbody>
                                   <tfoot>
-                                    <tr className="font-bold uppercase text-[10px]">
-                                      <td className="border-r border-b border-black p-1"></td>
-                                      <td colSpan={9} className="border-r border-b border-black p-1 text-left">TOTAL PARCIAL {currentPage.toString().padStart(2, '0')}</td>
-                                      <td className="border-b border-black p-1 text-center">{formatNumber(pageTotal)}</td>
-                                    </tr>
+                                    {/* Only show partial total if the document fits in a single page */}
+                                    {totalPages === 1 && (
+                                      <tr className="font-bold uppercase text-[9px]">
+                                        <td className="border-r border-b border-black p-0.5"></td>
+                                        <td colSpan={10} className="border-r border-b border-black p-0.5 text-left">TOTAL PARCIAL</td>
+                                        <td className="border-b border-black p-0.5 text-center">{formatNumber(pageTotal)}</td>
+                                      </tr>
+                                    )}
                                     {isLastOfFund && (
-                                      <tr className="font-bold uppercase text-[11px] bg-gray-50">
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td colSpan={9} className="border-r border-b border-black p-1 text-left">TOTAL {fund.toUpperCase()}</td>
-                                        <td className="border-b border-black p-1 text-center text-[13px]">{formatNumber(fundTotal)}</td>
+                                      <tr className="font-bold uppercase text-[10px] bg-gray-50">
+                                        <td className="border-r border-b border-black p-0.5"></td>
+                                        <td colSpan={10} className="border-r border-b border-black p-0.5 text-left">TOTAL {fund.toUpperCase()}</td>
+                                        <td className="border-b border-black p-0.5 text-center text-[11px]">{formatNumber(fundTotal)}</td>
                                       </tr>
                                     )}
                                     {isLastPageOfDoc && (
-                                      <tr className="font-bold uppercase text-[12px] bg-gray-100">
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td colSpan={9} className="border-r border-b border-black p-1 text-left">TOTAL GERAL</td>
-                                        <td className="border-b border-black p-1 text-center text-[14px]">{formatNumber(totalGeral)}</td>
+                                      <tr className="font-bold uppercase text-[11px] bg-gray-100">
+                                        <td className="border-r border-b border-black p-0.5"></td>
+                                        <td colSpan={10} className="border-r border-b border-black p-0.5 text-left">TOTAL GERAL</td>
+                                        <td className="border-b border-black p-0.5 text-center text-[12px]">{formatNumber(totalGeral)}</td>
                                       </tr>
                                     )}
                                   </tfoot>
