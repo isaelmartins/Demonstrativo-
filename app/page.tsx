@@ -1,10 +1,8 @@
 'use client';
-
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Bell, Landmark, Calendar, Network, FileText, Gavel, Map, Loader2, Upload, Settings, HelpCircle, Printer, Search, Filter, X, Menu, Trash2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
 const paymentData = [
   { id: '001', name: 'ANDERSON MATEUS DE LIMA BARBOSA LTDA', cnpj: '44.629.750/0001-00', item: 'SAL REFINADO GUSTAVO', doc: 'NFE 923', docDate: '21/08/2023', payDoc: 'CH 000000', payDate: '23/08/2023', qty: '2 PC', total: 3.00, fund: 'Estadual' },
   { id: '002', name: 'ANDERSON MATEUS DE LIMA BARBOSA LTDA', cnpj: '44.629.750/0001-00', item: 'OLEO DE SOJA SOYA', doc: 'NFE 923', docDate: '21/08/2023', payDoc: 'CH 000000', payDate: '23/08/2023', qty: '6 UM', total: 57.00, fund: 'Estadual' },
@@ -466,42 +464,54 @@ export default function Home() {
                 const estadualPayments = payments.filter(p => p.fund === 'Estadual');
                 const totalGeral = payments.reduce((acc, p) => acc + p.total, 0);
 
-                const federalInvoices = federalPayments.reduce((acc, p) => {
-                  if (!acc[p.doc]) acc[p.doc] = [];
-                  acc[p.doc].push(p);
-                  return acc;
-                }, {} as Record<string, typeof federalPayments>);
-                const estadualInvoices = estadualPayments.reduce((acc, p) => {
-                  if (!acc[p.doc]) acc[p.doc] = [];
-                  acc[p.doc].push(p);
-                  return acc;
-                }, {} as Record<string, typeof estadualPayments>);
+                const ITEMS_PER_PAGE = 12;
+                const allPages: any[] = [];
 
-                const federalInvoiceEntries = Object.entries(federalInvoices);
-                const estadualInvoiceEntries = Object.entries(estadualInvoices);
-                const totalPages = federalInvoiceEntries.length + estadualInvoiceEntries.length;
-
-                return ['Federal', 'Estadual'].map((fund, fundIdx) => {
+                ['Federal', 'Estadual'].forEach((fund, fundIdx) => {
                   const fundPayments = fund === 'Federal' ? federalPayments : estadualPayments;
-                  const fundTotal = fundPayments.reduce((acc, p) => acc + p.total, 0);
-                  const isVisibleOnScreen = filterFund === 'All' || filterFund === fund;
-                  if (fundPayments.length === 0) return null;
+                  if (fundPayments.length === 0) return;
 
-                  const invoiceEntries = fund === 'Federal' ? federalInvoiceEntries : estadualInvoiceEntries;
+                  const invoices = fundPayments.reduce((acc, p) => {
+                    if (!acc[p.doc]) acc[p.doc] = [];
+                    acc[p.doc].push(p);
+                    return acc;
+                  }, {} as Record<string, typeof fundPayments>);
+
+                  const invoiceEntries = Object.entries(invoices);
+                  invoiceEntries.forEach(([docNum, invoicePayments], invoiceIdx) => {
+                    const isLastInvoiceOfFund = invoiceIdx === invoiceEntries.length - 1;
+                    
+                    for (let i = 0; i < invoicePayments.length; i += ITEMS_PER_PAGE) {
+                      const chunk = invoicePayments.slice(i, i + ITEMS_PER_PAGE);
+                      allPages.push({
+                        fund,
+                        fundIdx,
+                        docNum,
+                        items: chunk,
+                        firstPay: invoicePayments[0],
+                        isFirstOfInvoice: i === 0,
+                        isLastOfInvoice: i + ITEMS_PER_PAGE >= invoicePayments.length,
+                        isLastOfFund: isLastInvoiceOfFund && (i + ITEMS_PER_PAGE >= invoicePayments.length),
+                        fundTotal: fundPayments.reduce((acc, p) => acc + p.total, 0),
+                        invoiceTotal: invoicePayments.reduce((acc, p) => acc + p.total, 0),
+                        pageTotal: chunk.reduce((acc, p) => acc + p.total, 0),
+                        itemOffset: i,
+                        isVisibleOnScreen: filterFund === 'All' || filterFund === fund
+                      });
+                    }
+                  });
+                });
+
+                const totalPages = allPages.length;
+
+                return allPages.map((page, pageIdx) => {
+                  const currentPage = pageIdx + 1;
+                  const isFirstPageOfDoc = currentPage === 1;
+                  const isLastPageOfDoc = currentPage === totalPages;
+                  const { fund, items, firstPay, isLastOfFund, fundTotal, pageTotal, itemOffset, isVisibleOnScreen } = page;
 
                   return (
-                    <div key={fund} className="space-y-0">
-                      {invoiceEntries.map(([docNum, invoicePayments], invoiceIdx) => {
-                        globalPageCounter++;
-                        const currentPage = globalPageCounter;
-                        const invoiceTotal = invoicePayments.reduce((acc, p) => acc + p.total, 0);
-                        const firstPay = invoicePayments[0];
-                        const isFirstPageOfDoc = currentPage === 1;
-                        const isLastPageOfFund = invoiceIdx === invoiceEntries.length - 1;
-                        const isLastPageOfDoc = currentPage === totalPages;
-
-                        return (
-                          <div key={docNum} className={`${isVisibleOnScreen ? 'flex' : 'hidden print:flex'} print-container bg-white text-black shadow-xl p-8 w-[1122px] min-h-[794px] flex flex-col border border-black font-serif relative print:shadow-none print:border-none print:m-0 print:p-0 print:w-full print:min-h-0 print:break-after-page`}>
+                    <div key={`${fund}-${page.docNum}-${pageIdx}`} className={`${isVisibleOnScreen ? 'flex' : 'hidden print:flex'} print-container bg-white text-black shadow-xl pt-8 px-8 pb-24 w-[1122px] min-h-[794px] flex flex-col border border-black font-serif relative print:shadow-none print:border-none print:m-0 print:w-full print:min-h-0`}>
                             {/* Watermark for preview */}
                             <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none no-print">
                               <div className="text-[120px] font-black rotate-[-35deg] border-8 border-black p-10">PAISAGEM</div>
@@ -688,7 +698,7 @@ export default function Home() {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {invoicePayments.map((payment, pIdx) => {
+                                    {items.map((payment: any, pIdx: number) => {
                                       return (
                                         <tr 
                                           key={payment.id} 
@@ -696,7 +706,7 @@ export default function Home() {
                                           onClick={() => setSelectedPayment(payment)}
                                           title="Clique para ver ou editar detalhes"
                                         >
-                                          <td className="border-r border-b border-black p-1 text-[11px] font-bold">{pIdx + 1}</td>
+                                          <td className="border-r border-b border-black p-1 text-[11px] font-bold">{itemOffset + pIdx + 1}</td>
                                           <td className="border-r border-b border-black p-1"></td>
                                           <td className="border-r border-b border-black p-1 text-left uppercase text-[11px] font-bold">
                                             {payment.item}
@@ -721,30 +731,14 @@ export default function Home() {
                                         </tr>
                                       );
                                     })}
-                                    {/* Fill empty rows to reach at least 15 items if it's a short page */}
-                                    {invoicePayments.length < 15 && Array.from({ length: 15 - invoicePayments.length }).map((_, i) => (
-                                      <tr key={`empty-${i}`} className="h-8">
-                                        <td className="border-r border-b border-black p-1 text-[11px] font-bold">{invoicePayments.length + i + 1}</td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-r border-b border-black p-1"></td>
-                                        <td className="border-b border-black p-1"></td>
-                                      </tr>
-                                    ))}
                                   </tbody>
                                   <tfoot>
                                     <tr className="font-bold uppercase text-[10px]">
                                       <td className="border-r border-b border-black p-1"></td>
                                       <td colSpan={9} className="border-r border-b border-black p-1 text-left">TOTAL PARCIAL {currentPage.toString().padStart(2, '0')}</td>
-                                      <td className="border-b border-black p-1 text-center">{formatNumber(invoiceTotal)}</td>
+                                      <td className="border-b border-black p-1 text-center">{formatNumber(pageTotal)}</td>
                                     </tr>
-                                    {isLastPageOfFund && (
+                                    {isLastOfFund && (
                                       <tr className="font-bold uppercase text-[11px] bg-gray-50">
                                         <td className="border-r border-b border-black p-1"></td>
                                         <td colSpan={9} className="border-r border-b border-black p-1 text-left">TOTAL {fund.toUpperCase()}</td>
@@ -784,61 +778,57 @@ export default function Home() {
                             </div>
                           </div>
                         );
-                      })}
-                    </div>
-                  );
-                });
-              })()}
-          </div>
-        </div>
-      </main>
-    </div>
+                      })
+                    })()}
+                </div>
+              </div>
+            </main>
 
-      {/* Global Footer Shell */}
-      <footer className="bg-[#f8f9ff] dark:bg-[#0a0f16] w-full py-8 mt-auto border-t border-[#1A365D]/5 no-print">
-        <div className="flex flex-col md:flex-row justify-between items-center px-12 max-w-screen-2xl mx-auto">
-          <div className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] mb-4 md:mb-0">
-            © 2024 Portal de Transparência - Controle de Contas Públicas
-          </div>
-          <div className="flex gap-8">
-            <a href="#" className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] hover:underline underline-offset-4">Privacidade de Dados</a>
-            <a href="#" className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] hover:underline underline-offset-4">Protocolo de Auditoria</a>
-            <a href="#" className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] hover:underline underline-offset-4">Portal Institucional</a>
-          </div>
-        </div>
-      </footer>
+            {/* Global Footer Shell */}
+            <footer className="bg-[#f8f9ff] dark:bg-[#0a0f16] w-full py-8 mt-auto border-t border-[#1A365D]/5 no-print">
+              <div className="flex flex-col md:flex-row justify-between items-center px-12 max-w-screen-2xl mx-auto">
+                <div className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] mb-4 md:mb-0">
+                  © 2024 Portal de Transparência - Controle de Contas Públicas
+                </div>
+                <div className="flex gap-8">
+                  <a href="#" className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] hover:underline underline-offset-4">Privacidade de Dados</a>
+                  <a href="#" className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] hover:underline underline-offset-4">Protocolo de Auditoria</a>
+                  <a href="#" className="font-body text-xs uppercase tracking-widest opacity-50 text-[#1A365D] dark:text-[#dfe9fa] hover:underline underline-offset-4">Portal Institucional</a>
+                </div>
+              </div>
+            </footer>
 
-      {/* Print Floating Action */}
-      <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 flex flex-col items-end gap-3 no-print z-[100]">
-        <div className="hidden md:block bg-surface-container-high p-3 rounded-xl shadow-xl border border-outline-variant/30 text-[10px] font-bold text-primary uppercase tracking-widest animate-bounce">
-          Dica: Use &quot;Salvar como PDF&quot; no diálogo de impressão
-        </div>
-        <div className="flex gap-2">
-          <button 
-            type="button"
-            onClick={() => {
-              window.open(window.location.href, '_blank');
-            }} 
-            className="bg-white dark:bg-[#1d2b3a] text-primary p-4 md:p-5 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all border-4 border-primary/20"
-            title="Abrir em nova aba para melhor impressão"
-          >
-            <Network size={20} className="md:w-6 md:h-6" />
-          </button>
-          <button 
-            type="button"
-            onClick={() => {
-              console.log("Iniciando impressão...");
-              window.print();
-            }} 
-            className="bg-primary text-white p-4 md:p-5 rounded-full shadow-[0_20px_50px_rgba(0,32,69,0.3)] hover:scale-110 active:scale-95 transition-all flex items-center space-x-2 md:space-x-3 border-4 border-white dark:border-[#121c28]"
-          >
-            <Printer size={20} className="md:w-6 md:h-6" />
-            <span className="font-bold text-sm md:text-lg pr-2">Gerar Demonstrativo</span>
-          </button>
-        </div>
-      </div>
+            {/* Print Floating Action */}
+            <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 flex flex-col items-end gap-3 no-print z-[100]">
+              <div className="hidden md:block bg-surface-container-high p-3 rounded-xl shadow-xl border border-outline-variant/30 text-[10px] font-bold text-primary uppercase tracking-widest animate-bounce">
+                Dica: Use &quot;Salvar como PDF&quot; no diálogo de impressão
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    window.open(window.location.href, '_blank');
+                  }} 
+                  className="bg-white dark:bg-[#1d2b3a] text-primary p-4 md:p-5 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all border-4 border-primary/20"
+                  title="Abrir em nova aba para melhor impressão"
+                >
+                  <Network size={20} className="md:w-6 md:h-6" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    console.log("Iniciando impressão...");
+                    window.print();
+                  }} 
+                  className="bg-primary text-white p-4 md:p-5 rounded-full shadow-[0_20px_50px_rgba(0,32,69,0.3)] hover:scale-110 active:scale-95 transition-all flex items-center space-x-2 md:space-x-3 border-4 border-white dark:border-[#121c28]"
+                >
+                  <Printer size={20} className="md:w-6 md:h-6" />
+                  <span className="font-bold text-sm md:text-lg pr-2">Gerar Demonstrativo</span>
+                </button>
+              </div>
+            </div>
+          </div>
 
-      {/* Finalize Federal Modal */}
       <AnimatePresence>
         {showFederalTotal && (
           <motion.div 
