@@ -466,18 +466,28 @@ export default function Home() {
                 const estadualPayments = payments.filter(p => p.fund === 'Estadual');
                 const totalGeral = payments.reduce((acc, p) => acc + p.total, 0);
 
+                const federalInvoices = federalPayments.reduce((acc, p) => {
+                  if (!acc[p.doc]) acc[p.doc] = [];
+                  acc[p.doc].push(p);
+                  return acc;
+                }, {} as Record<string, typeof federalPayments>);
+                const estadualInvoices = estadualPayments.reduce((acc, p) => {
+                  if (!acc[p.doc]) acc[p.doc] = [];
+                  acc[p.doc].push(p);
+                  return acc;
+                }, {} as Record<string, typeof estadualPayments>);
+
+                const federalInvoiceEntries = Object.entries(federalInvoices);
+                const estadualInvoiceEntries = Object.entries(estadualInvoices);
+                const totalPages = federalInvoiceEntries.length + estadualInvoiceEntries.length;
+
                 return ['Federal', 'Estadual'].map((fund, fundIdx) => {
                   const fundPayments = fund === 'Federal' ? federalPayments : estadualPayments;
                   const fundTotal = fundPayments.reduce((acc, p) => acc + p.total, 0);
                   const isVisibleOnScreen = filterFund === 'All' || filterFund === fund;
                   if (fundPayments.length === 0) return null;
 
-                  const invoices = fundPayments.reduce((acc, p) => {
-                    if (!acc[p.doc]) acc[p.doc] = [];
-                    acc[p.doc].push(p);
-                    return acc;
-                  }, {} as Record<string, typeof fundPayments>);
-                  const invoiceEntries = Object.entries(invoices);
+                  const invoiceEntries = fund === 'Federal' ? federalInvoiceEntries : estadualInvoiceEntries;
 
                   return (
                     <div key={fund} className="space-y-0">
@@ -486,9 +496,9 @@ export default function Home() {
                         const currentPage = globalPageCounter;
                         const invoiceTotal = invoicePayments.reduce((acc, p) => acc + p.total, 0);
                         const firstPay = invoicePayments[0];
-                        const isFirstPageOfDoc = fundIdx === 0 && invoiceIdx === 0;
+                        const isFirstPageOfDoc = currentPage === 1;
                         const isLastPageOfFund = invoiceIdx === invoiceEntries.length - 1;
-                        const isLastPageOfDoc = fundIdx === 1 && isLastPageOfFund;
+                        const isLastPageOfDoc = currentPage === totalPages;
 
                         return (
                           <div key={docNum} className={`${isVisibleOnScreen ? 'flex' : 'hidden print:flex'} print-container bg-white text-black shadow-xl p-8 w-[1122px] min-h-[794px] flex flex-col border border-black font-serif relative print:shadow-none print:border-none print:m-0 print:p-0 print:w-full print:min-h-0 print:break-after-page`}>
